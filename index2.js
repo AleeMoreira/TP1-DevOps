@@ -7,7 +7,7 @@ let tasks = []; // Arreglo para almacenar las tareas
 
 const server = http.createServer((req, res) => {
   if (req.url === '/' && req.method === 'GET') {
-    const filePath = path.join(__dirname, 'index.html');
+    const filePath = path.join(__dirname, 'index2.html'); //AGREGUE EL 2
 
     fs.readFile(filePath, (err, content) => {
       if (err) {
@@ -31,7 +31,6 @@ const server = http.createServer((req, res) => {
     });
     req.on('end', () => {
       const newTask = JSON.parse(body);
-      newTask.completed = false; // Nueva tarea empieza como no completada
       tasks.push(newTask);
       res.writeHead(201, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ message: 'Task created', tasks }));

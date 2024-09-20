@@ -5,6 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>To-Do List</title>
+    <!-- Incluir FontAwesome para los iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
@@ -16,7 +17,6 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            flex-direction: column;
         }
 
         h1 {
@@ -92,6 +92,7 @@
             background-color: #e0a800;
         }
 
+        /* Estilo para el botón de Delete (tacho rojo) */
         li .delete-btn {
             background-color: #dc3545;
             color: white;
@@ -99,12 +100,6 @@
 
         li .delete-btn:hover {
             background-color: #c82333;
-        }
-
-        /* Estilo para aumentar el tamaño del checkbox */
-        input[type="checkbox"] {
-            transform: scale(1.5); /* Aumenta el tamaño del checkbox */
-            margin-right: 10px;
         }
     </style>
 </head>
@@ -117,13 +112,10 @@
             <button type="submit">Add Task</button>
         </form>
 
-        <button id="viewCompleted">View Completed Tasks</button>
         <ul id="taskList"></ul>
     </div>
 
     <script>
-        let showCompleted = false; // Control para mostrar tareas completadas
-
         // Obtener las tareas
         function loadTasks() {
             fetch('/tasks')
@@ -132,20 +124,17 @@
                     const taskList = document.getElementById('taskList');
                     taskList.innerHTML = '';
                     tasks.forEach((task, index) => {
-                        if (task.completed === showCompleted) {
-                            const li = document.createElement('li');
-                            li.innerHTML = `
-                                <span>${task.name}</span>
-                                <input type="checkbox" ${task.completed ? 'checked' : ''} onclick="toggleComplete(${index})">
-                                <div class="buttons">
-                                    <button onclick="updateTask(${index})">Update</button>
-                                    <button class="delete-btn" onclick="deleteTask(${index})">
-                                        <i class="fas fa-trash"></i> Delete
-                                    </button>
-                                </div>
-                            `;
-                            taskList.appendChild(li);
-                        }
+                        const li = document.createElement('li');
+                        li.innerHTML = `
+                            <span>${task.name}</span>
+                            <div class="buttons">
+                                <button onclick="updateTask(${index})">Update</button>
+                                <button class="delete-btn" onclick="deleteTask(${index})">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </div>
+                        `;
+                        taskList.appendChild(li);
                     });
                 });
         }
@@ -154,7 +143,7 @@
         document.getElementById('taskForm').addEventListener('submit', function (e) {
             e.preventDefault();
             const taskInput = document.getElementById('taskInput');
-            const newTask = { name: taskInput.value, completed: false };
+            const newTask = { name: taskInput.value };
 
             fetch('/tasks', {
                 method: 'POST',
@@ -162,32 +151,11 @@
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(newTask),
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(() => {
+            }).then(() => {
                 taskInput.value = '';
                 loadTasks();
-            })
-            .catch(error => {
-                console.error('There was a problem with the fetch operation:', error);
             });
         });
-
-        // Alternar tarea completa/incompleta
-        function toggleComplete(id) {
-            fetch(`/tasks/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ completed: !showCompleted }),
-            }).then(() => loadTasks());
-        }
 
         // Actualizar una tarea
         function updateTask(id) {
@@ -209,13 +177,6 @@
                 method: 'DELETE',
             }).then(() => loadTasks());
         }
-
-        // Ver tareas completadas
-        document.getElementById('viewCompleted').addEventListener('click', function () {
-            showCompleted = !showCompleted;
-            document.getElementById('viewCompleted').innerText = showCompleted ? 'View To-Do Tasks' : 'View Completed Tasks';
-            loadTasks();
-        });
 
         // Cargar las tareas al inicio
         loadTasks();
