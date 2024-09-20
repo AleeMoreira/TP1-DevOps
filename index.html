@@ -1,14 +1,82 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Node.js Server</title>
+    <title>To-Do List</title>
 </head>
 <body>
-    <h1>Hello from Node.js!</h1>
-    <p>This is a simple HTML page served from Node.js</p>
+    <h1>To-Do List</h1>
+    
+    <form id="taskForm">
+        <input type="text" id="taskInput" placeholder="New Task" required />
+        <button type="submit">Add Task</button>
+    </form>
+
+    <ul id="taskList"></ul>
+
+    <script>
+        // Obtener las tareas
+        function loadTasks() {
+            fetch('/tasks')
+                .then(response => response.json())
+                .then(tasks => {
+                    const taskList = document.getElementById('taskList');
+                    taskList.innerHTML = '';
+                    tasks.forEach((task, index) => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `
+                            <span>${task.name}</span>
+                            <button onclick="deleteTask(${index})">Delete</button>
+                            <button onclick="updateTask(${index})">Update</button>
+                        `;
+                        taskList.appendChild(li);
+                    });
+                });
+        }
+
+        // Crear una nueva tarea
+        document.getElementById('taskForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const taskInput = document.getElementById('taskInput');
+            const newTask = { name: taskInput.value };
+
+            fetch('/tasks', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(newTask),
+            }).then(() => {
+                taskInput.value = '';
+                loadTasks();
+            });
+        });
+
+        // Actualizar una tarea
+        function updateTask(id) {
+            const newTaskName = prompt('Enter new task name:');
+            if (newTaskName) {
+                fetch(`/tasks/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name: newTaskName }),
+                }).then(() => loadTasks());
+            }
+        }
+
+        // Eliminar una tarea
+        function deleteTask(id) {
+            fetch(`/tasks/${id}`, {
+                method: 'DELETE',
+            }).then(() => loadTasks());
+        }
+
+        // Cargar las tareas al inicio
+        loadTasks();
+    </script>
 </body>
 </html>
