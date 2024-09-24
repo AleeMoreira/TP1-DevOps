@@ -1,14 +1,25 @@
 version: '3'
 services:
-  redis-server:
-    image: "redis:alpine"
-    container_name: redis-server
-    ports:
-      - "6379:6379"
-
   app:
     build: .
     ports:
       - "3000:3000"
+    volumes:
+      - ./src:/usr/src/app/src  # Montamos solo la carpeta src
     depends_on:
-      - redis-server
+      - redis
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+  redis:
+    image: "redis:alpine"
+    container_name: "redis_server"
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  redis_data:
+    driver: local

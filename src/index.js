@@ -2,10 +2,11 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const redis = require('redis');
+const { v4: uuidv4 } = require('uuid');  // Agrega la importación para UUID
 
 // Crear cliente de Redis
 const client = redis.createClient({
-  host: 'redis-server',
+  host: 'redis',  
   port: 6379
 });
 
@@ -29,14 +30,14 @@ const server = http.createServer((req, res) => {
     });
   } else if (req.url === '/tasks' && req.method === 'GET') {
     // Obtener tareas pendientes desde Redis
-    client.lrange('tasks', 0, -1, (err, tasks) => {
+    client.hgetall('tasks', (err, tasks) => {
       if (err) {
         res.writeHead(500);
         res.end('Error fetching tasks');
         return;
       }
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(tasks.map(task => JSON.parse(task))));
+      res.end(JSON.stringify(Object.values(tasks).map(task => JSON.parse(task))));
     });
   } else if (req.url === '/tasks' && req.method === 'POST') {
     // Crear una nueva tarea
@@ -47,18 +48,20 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       const newTask = JSON.parse(body);
       newTask.completed = false; // Nueva tarea empieza como no completada
-      client.rpush('tasks', JSON.stringify(newTask), (err) => {
+      newTask.id = uuidv4(); // Asignamos un ID único
+
+      client.hset('tasks', newTask.id, JSON.stringify(newTask), (err) => {
         if (err) {
           res.writeHead(500);
           res.end('Error adding task');
           return;
         }
         res.writeHead(201, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'Task created' }));
+        res.end(JSON.stringify({ message: 'Task created', task: newTask }));
       });
     });
   } else if (req.url.startsWith('/tasks/') && req.method === 'PUT') {
-    // Actualizar una tarea existente (nombre o estado completado)
+    // Actualizar una tarea existente
     const id = req.url.split('/')[2];
     let body = '';
     req.on('data', chunk => {
@@ -66,7 +69,7 @@ const server = http.createServer((req, res) => {
     });
     req.on('end', () => {
       const updatedTask = JSON.parse(body);
-      client.lset('tasks', id, JSON.stringify(updatedTask), (err) => {
+      client.hset('tasks', id, JSON.stringify(updatedTask), (err) => {
         if (err) {
           res.writeHead(500);
           res.end('Error updating task');
@@ -79,32 +82,14 @@ const server = http.createServer((req, res) => {
   } else if (req.url.startsWith('/tasks/') && req.method === 'DELETE') {
     // Eliminar una tarea existente
     const id = req.url.split('/')[2];
-    client.lindex('tasks', id, (err, task) => {
-      if (err || !task) {
-        res.writeHead(404);
-        res.end('Task not found');
-        return;
-      }
-      client.lrem('tasks', 1, task, (err) => {
-        if (err) {
-          res.writeHead(500);
-          res.end('Error deleting task');
-          return;
-        }
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'Task deleted' }));
-      });
-    });
-  } else if (req.url === '/completed-tasks' && req.method === 'GET') {
-    // Obtener tareas completadas
-    client.lrange('completed_tasks', 0, -1, (err, tasks) => {
+    client.hdel('tasks', id, (err) => {
       if (err) {
         res.writeHead(500);
-        res.end('Error fetching completed tasks');
+        res.end('Error deleting task');
         return;
       }
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(tasks.map(task => JSON.parse(task))));
+      res.end(JSON.stringify({ message: 'Task deleted' }));
     });
   } else {
     res.writeHead(404, { 'Content-Type': 'text/plain' });

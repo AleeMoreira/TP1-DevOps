@@ -123,29 +123,27 @@
 
     <script>
         let showCompleted = false; // Control para mostrar tareas completadas
-
         // Obtener las tareas
         function loadTasks() {
-            fetch('/tasks')
+            const endpoint = showCompleted ? '/completed-tasks' : '/tasks';  // Cambiar el endpoint según el estado
+            fetch(endpoint)
                 .then(response => response.json())
                 .then(tasks => {
                     const taskList = document.getElementById('taskList');
                     taskList.innerHTML = '';
-                    tasks.forEach((task, index) => {
-                        if (task.completed === showCompleted) {
-                            const li = document.createElement('li');
-                            li.innerHTML = `
-                                <span>${task.name}</span>
-                                <input type="checkbox" ${task.completed ? 'checked' : ''} onclick="toggleComplete(${index})">
-                                <div class="buttons">
-                                    <button onclick="updateTask(${index})">Update</button>
-                                    <button class="delete-btn" onclick="deleteTask(${index})">
-                                        <i class="fas fa-trash"></i> Delete
-                                    </button>
-                                </div>
-                            `;
-                            taskList.appendChild(li);
-                        }
+                    tasks.forEach(task => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `
+                            <span>${task.name}</span>
+                            <input type="checkbox" ${task.completed ? 'checked' : ''} onclick="toggleComplete('${task.id}')">
+                            <div class="buttons">
+                                <button onclick="updateTask('${task.id}')">Update</button>
+                                <button class="delete-btn" onclick="deleteTask('${task.id}')">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </div>
+                        `;
+                        taskList.appendChild(li);
                     });
                 });
         }
@@ -163,43 +161,47 @@
                 },
                 body: JSON.stringify(newTask),
             })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(() => {
                 taskInput.value = '';
                 loadTasks();
-            })
-            .catch(error => {
-                console.error('There was a problem with the fetch operation:', error);
             });
         });
 
         // Alternar tarea completa/incompleta
         function toggleComplete(id) {
-            fetch(`/tasks/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ completed: !showCompleted }),
-            }).then(() => loadTasks());
+            fetch(`/tasks/${id}`)
+                .then(response => response.json())
+                .then(task => {
+                    const updatedTask = { ...task, completed: !task.completed };
+                    
+                    fetch(`/tasks/${id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(updatedTask),
+                    }).then(() => loadTasks());
+                });
         }
 
         // Actualizar una tarea
         function updateTask(id) {
             const newTaskName = prompt('Enter new task name:');
             if (newTaskName) {
-                fetch(`/tasks/${id}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ name: newTaskName }),
-                }).then(() => loadTasks());
+                fetch(`/tasks/${id}`)
+                    .then(response => response.json())
+                    .then(task => {
+                        const updatedTask = { ...task, name: newTaskName };
+
+                        fetch(`/tasks/${id}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(updatedTask),
+                        }).then(() => loadTasks());
+                    });
             }
         }
 
@@ -210,15 +212,9 @@
             }).then(() => loadTasks());
         }
 
-        // Ver tareas completadas
-        document.getElementById('viewCompleted').addEventListener('click', function () {
-            showCompleted = !showCompleted;
-            document.getElementById('viewCompleted').innerText = showCompleted ? 'View To-Do Tasks' : 'View Completed Tasks';
-            loadTasks();
-        });
-
         // Cargar las tareas al inicio
         loadTasks();
+
     </script>
 </body>
 </html>

@@ -1,17 +1,20 @@
-#Specify a base image
-FROM node:alpine
+# Utilizamos la imagen oficial de Node.js
+FROM node:14
 
-#Specify a working directory
-WORKDIR "C:\Users\Ale\UTN\5toAÑO\DEVOPS - CULTURA, HERRAMIENTAS Y PROCESOS\PRÁCTICA\TP1\TP1-DevOps"
+# Establecemos el directorio de trabajo dentro del contenedor
+WORKDIR /usr/src/app
 
-#Copy the dependencies file
-COPY ./package.json ./
+# Copiamos el package.json y package-lock.json
+COPY package*.json ./
 
-#Install dependencies
-RUN npm install 
+# Instalamos las dependencias de la aplicación
+RUN npm install
 
-#Copy remaining files
-COPY ./ ./
+# Copiamos el resto del código de la aplicación
+COPY src /usr/src/app
 
-#Default command
-CMD ["npm","start"]
+# Exponemos el puerto en el que corre tu aplicación (ajusta según sea necesario)
+EXPOSE 3000
+
+# Comando para iniciar la aplicación
+CMD ["npm", "start"]
