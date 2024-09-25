@@ -1,102 +1,128 @@
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
+const express = require('express');
 const redis = require('redis');
-const { v4: uuidv4 } = require('uuid');  // Agrega la importación para UUID
+const { v4: uuidv4 } = require('uuid');
+const bodyParser = require('body-parser');
+const path = require('path');
+const cors = require('cors');
 
-// Crear cliente de Redis
+const app = express();
+const port = 3000;
+
+// Redis client setup
 const client = redis.createClient({
-  host: 'redis',  
+  host: 'redis', // Host para Redis en Docker
   port: 6379
 });
 
-client.on('error', (err) => {
-  console.error('Error connecting to Redis', err);
+app.use(cors()); // Enable CORS
+app.use(bodyParser.json());
+app.use(express.static(path.join(__dirname, '.'))); // Serve the HTML file
+
+// Endpoint para obtener todas las tareas
+app.get('/tasks', (req, res) => {
+  client.lrange('tasks', 0, -1, (err, tasks) => {
+    if (err) {
+      console.error('Error fetching tasks from Redis:', err);
+      return res.status(500).json({ message: 'Internal Server Error' });
+    }
+
+    if (!tasks || tasks.length === 0) {
+      return res.json([]); // Si no hay tareas, devolver una lista vacía
+    }
+
+    try {
+      const parsedTasks = tasks.map(task => JSON.parse(task));
+      res.json(parsedTasks);
+    } catch (error) {
+      console.error('Error parsing tasks:', error);
+      res.status(500).json({ message: 'Error parsing tasks', error });
+    }
+  });
 });
 
-const port = process.env.PORT || 3000;
+// Endpoint para obtener las tareas completadas
+app.get('/tasks/completed', (req, res) => {
+  client.lrange('tasks', 0, -1, (err, tasks) => {
+    if (err) {
+      return res.status(500).send('Error fetching tasks from Redis');
+    }
 
-const server = http.createServer((req, res) => {
-  if (req.url === '/' && req.method === 'GET') {
-    const filePath = path.join(__dirname, 'index.html');
-    fs.readFile(filePath, (err, content) => {
-      if (err) {
-        res.writeHead(500);
-        res.end('Error loading the page');
-        return;
-      }
-      res.writeHead(200, { 'Content-Type': 'text/html' });
-      res.end(content, 'utf-8');
-    });
-  } else if (req.url === '/tasks' && req.method === 'GET') {
-    // Obtener tareas pendientes desde Redis
-    client.hgetall('tasks', (err, tasks) => {
-      if (err) {
-        res.writeHead(500);
-        res.end('Error fetching tasks');
-        return;
-      }
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(Object.values(tasks).map(task => JSON.parse(task))));
-    });
-  } else if (req.url === '/tasks' && req.method === 'POST') {
-    // Crear una nueva tarea
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk.toString();
-    });
-    req.on('end', () => {
-      const newTask = JSON.parse(body);
-      newTask.completed = false; // Nueva tarea empieza como no completada
-      newTask.id = uuidv4(); // Asignamos un ID único
+    if (!tasks) {
+      return res.json([]); // Si no hay tareas completadas, devolver una lista vacía
+    }
 
-      client.hset('tasks', newTask.id, JSON.stringify(newTask), (err) => {
-        if (err) {
-          res.writeHead(500);
-          res.end('Error adding task');
-          return;
-        }
-        res.writeHead(201, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'Task created', task: newTask }));
-      });
-    });
-  } else if (req.url.startsWith('/tasks/') && req.method === 'PUT') {
-    // Actualizar una tarea existente
-    const id = req.url.split('/')[2];
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk.toString();
-    });
-    req.on('end', () => {
-      const updatedTask = JSON.parse(body);
-      client.hset('tasks', id, JSON.stringify(updatedTask), (err) => {
-        if (err) {
-          res.writeHead(500);
-          res.end('Error updating task');
-          return;
-        }
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'Task updated' }));
-      });
-    });
-  } else if (req.url.startsWith('/tasks/') && req.method === 'DELETE') {
-    // Eliminar una tarea existente
-    const id = req.url.split('/')[2];
-    client.hdel('tasks', id, (err) => {
-      if (err) {
-        res.writeHead(500);
-        res.end('Error deleting task');
-        return;
-      }
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ message: 'Task deleted' }));
-    });
-  } else {
-    res.writeHead(404, { 'Content-Type': 'text/plain' });
-    res.end('404 Not Found');
-  }
+    const parsedTasks = tasks
+      .map(task => JSON.parse(task))
+      .filter(task => task.completed);
+    res.json(parsedTasks);
+  });
 });
 
-server.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}/`);
+// Endpoint para añadir una nueva tarea
+app.post('/tasks', (req, res) => {
+  const newTask = {
+    id: uuidv4(),
+    text: req.body.task,
+    completed: false
+  };
+  client.rpush('tasks', JSON.stringify(newTask), (err) => {
+    if (err) {
+      console.error('Error adding task:', err);
+      return res.status(500).json({ message: 'Internal Server Error' });
+    }
+    res.status(201).json(newTask);
+  });
+});
+
+// Endpoint para actualizar una tarea
+app.put('/tasks/:id', (req, res) => {
+  const taskId = req.params.id;
+  const updatedTaskData = req.body;
+  console.log(updatedTaskData);
+  client.lrange('tasks', 0, -1, (err, tasks) => {
+    if (err) {
+      return res.status(500).send('Error fetching tasks from Redis');
+    }
+
+    const taskList = tasks.map(task => JSON.parse(task));
+    const taskIndex = taskList.findIndex(task => task.id === taskId);
+
+    if (taskIndex !== -1) {
+      // Actualizar el nombre de la tarea y/o su estado
+      if (updatedTaskData.name) {
+        taskList[taskIndex].text = updatedTaskData.name; // Actualiza el texto de la tarea
+      }
+      if (typeof updatedTaskData.completed !== 'undefined') {
+        taskList[taskIndex].completed = updatedTaskData.completed; // Actualiza el estado de la tarea
+      }
+      client.del('tasks'); // Borra las tareas anteriores
+      taskList.forEach(task => client.rpush('tasks', JSON.stringify(task)));
+      res.send();
+    } else {
+      res.status(404).send('Task not found');
+    }
+  });
+});
+
+// Endpoint para borrar una tarea
+app.delete('/tasks/:id', (req, res) => {
+  const taskId = req.params.id;
+
+  client.lrange('tasks', 0, -1, (err, tasks) => {
+    if (err) {
+      return res.status(500).send('Error fetching tasks from Redis');
+    }
+
+    const taskList = tasks.map(task => JSON.parse(task));
+    const updatedTasks = taskList.filter(task => task.id !== taskId);
+
+    client.del('tasks'); // Delete old tasks
+    updatedTasks.forEach(task => client.rpush('tasks', JSON.stringify(task)));
+
+    res.send();
+  });
+});
+
+app.listen(port, () => {
+  console.log(`App running on http://localhost:${port}`);
 });
