@@ -11,17 +11,23 @@
         <h1 class="text-center">To-Do List</h1>
         <div class="row justify-content-center mt-3">
             <div class="col-md-6">
-                <input type="text" id="new-task" class="form-control" placeholder="New Task">
-                <button id="add-task" class="btn btn-success mt-2">Añadir Tarea</button>
-                <button id="view-completed-tasks" class="btn btn-primary mt-2">Ver Tareas Completas</button>
-                <button id="view-pending-tasks" class="btn btn-secondary mt-2">Ver Tareas Pendientes</button>
-                <button id="view-all-tasks" class="btn btn-info mt-2">Ver Todas las Tareas</button>
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <input type="text" id="new-task" class="form-control" placeholder="Nueva Tarea" style="width: 70%;">
+                    <button id="add-task" class="btn btn-success mt-2" style="width: 25%">Añadir Tarea</button>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <button id="view-completed-tasks" class="btn btn-primary mt-2" style="width: 30%">Ver Tareas Completas</button>
+                    <button id="view-pending-tasks" class="btn btn-secondary mt-2" style="width: 30%">Ver Tareas Pendientes</button>
+                    <button id="view-all-tasks" class="btn btn-info mt-2" style="width: 30%">Ver Todas las Tareas</button>
+                </div>
             </div>
         </div>
         <div class="row justify-content-center mt-5">
-            <div class="col-md-6">
-                <h2 id="status-text" class="text-center">VIENDO TODAS LAS TAREAS</h2>
-                <ul id="task-list" class="list-group">
+            <div class="col-md-6"  style="border-color: black; border-width: 2px; border-style: solid; border-radius: 3px; 
+            margin-bottom: 2px">
+                <h2 id="status-text" class="text-center h4">VIENDO TODAS LAS TAREAS</h2>
+                <p id="no-tasks-message" class="text-center text-muted" style="display: none;">No hay tareas disponibles.</p>
+                <ul id="task-list" class="list-group" >
                     <!-- Task items will be injected here -->
                 </ul>
             </div>
@@ -80,11 +86,17 @@
                     })
                     .then(tasks => {
                         taskList.innerHTML = ''; // Clear existing tasks
-                        tasks.forEach(task => createTaskElement(task));
+                        if (tasks.length === 0) {
+                            document.getElementById('no-tasks-message').style.display = 'block';
+                        } else {
+                            document.getElementById('no-tasks-message').style.display = 'none';
+                            tasks.forEach(task => createTaskElement(task));
+                        }
                     }).catch(error => {
                         console.error('Failed to load tasks:', error);
                     });
             }
+
 
             // Add a new task
             function addTask(taskText) {
@@ -115,11 +127,17 @@
                     })
                     .then(tasks => {
                         taskList.innerHTML = ''; // Clear existing tasks
-                        tasks.forEach(task => createCompletedTaskElement(task));
+                        if (tasks.length === 0) {
+                            document.getElementById('no-tasks-message').style.display = 'block';
+                        } else {
+                            document.getElementById('no-tasks-message').style.display = 'none';
+                            tasks.forEach(task => createCompletedTaskElement(task));
+                        }
                     }).catch(error => {
                         console.error('Failed to load completed tasks:', error);
                     });
             }
+
 
             // View pending tasks
             function viewPendingTasks() {
@@ -132,12 +150,18 @@
                     })
                     .then(tasks => {
                         taskList.innerHTML = ''; // Clear existing tasks
-                        tasks.filter(task => !task.completed)
-                             .forEach(task => createTaskElement(task));
+                        const pendingTasks = tasks.filter(task => !task.completed);
+                        if (pendingTasks.length === 0) {
+                            document.getElementById('no-tasks-message').style.display = 'block';
+                        } else {
+                            document.getElementById('no-tasks-message').style.display = 'none';
+                            pendingTasks.forEach(task => createTaskElement(task));
+                        }
                     }).catch(error => {
                         console.error('Failed to load pending tasks:', error);
                     });
             }
+
 
             // Helper function to update task status
             window.updateTask = function(taskId, completed) {
