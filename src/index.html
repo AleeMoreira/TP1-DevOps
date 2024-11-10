@@ -32,6 +32,13 @@
                 </ul>
             </div>
         </div>
+
+        <!-- Botón para iniciar el consumo de CPU -->
+        <div class="row justify-content-center mt-3">
+            <div class="col-md-6 text-center">
+                <button id="cpuButton" class="btn btn-danger">Start CPU Load</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -97,7 +104,6 @@
                     });
             }
 
-
             // Add a new task
             function addTask(taskText) {
                 fetch('/tasks', {
@@ -138,7 +144,6 @@
                     });
             }
 
-
             // View pending tasks
             function viewPendingTasks() {
                 fetch('/tasks')
@@ -162,7 +167,6 @@
                     });
             }
 
-
             // Helper function to update task status
             window.updateTask = function(taskId, completed) {
                 fetch(`/tasks/${taskId}`, {
@@ -185,7 +189,6 @@
             window.editTask = function(taskId, currentText) {
                 const newText = prompt('Editar tarea:', currentText);
                 if (newText !== null && newText.trim() !== '') {
-                    console.log(newText);
                     fetch(`/tasks/${taskId}`, {
                         method: 'PUT',
                         headers: {
@@ -227,6 +230,21 @@
                 `;
                 taskList.appendChild(li);
             }
+
+            // Event listener para el botón de consumo de CPU
+            document.getElementById('cpuButton').addEventListener('click', async () => {
+                try {
+                    const response = await fetch('/consume-cpu', { method: 'POST' });
+                    if (response.ok) {
+                        alert('CPU Load started');
+                    } else {
+                        alert('Failed to start CPU load');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error starting CPU load');
+                }
+            });
         });
     </script>
 </body>

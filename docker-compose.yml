@@ -5,7 +5,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./src:/usr/src/app/src  # Montamos solo la carpeta src
+      - ./src:/usr/src/app/src
     depends_on:
       - redis
     environment:
@@ -20,6 +20,39 @@ services:
     volumes:
       - redis_data:/data
 
+  prometheus:
+    image: prom/prometheus
+    container_name: "prometheus"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    depends_on:
+      - cadvisor
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: "cadvisor"
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: "grafana"
+    ports:
+      - "3001:3000"  # Grafana usa el puerto 3000 internamente, mapeado a 3001 en el host
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana_data:/var/lib/grafana  # Persiste datos de Grafana
+
 volumes:
   redis_data:
+    driver: local
+  grafana_data:
     driver: local
