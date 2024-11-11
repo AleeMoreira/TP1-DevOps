@@ -50,6 +50,8 @@ services:
       - prometheus
     volumes:
       - grafana_data:/var/lib/grafana  # Persiste datos de Grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning  # Configuración de provisión
+      - ./grafana/dashboards:/var/lib/grafana/dashboards  # Dashboards JSON
 
 volumes:
   redis_data:
