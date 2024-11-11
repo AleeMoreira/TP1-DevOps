@@ -24,11 +24,13 @@ services:
     image: prom/prometheus
     container_name: "prometheus"
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml  # Asegúrate de que prometheus.yml esté en la raíz del proyecto
     ports:
       - "9090:9090"
     depends_on:
       - cadvisor
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"  # Configura el archivo de configuración explícitamente
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
@@ -52,6 +54,8 @@ services:
       - grafana_data:/var/lib/grafana  # Persiste datos de Grafana
       - ./grafana/provisioning:/etc/grafana/provisioning  # Configuración de provisión
       - ./grafana/dashboards:/var/lib/grafana/dashboards  # Dashboards JSON
+    environment:
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning  # Asegura que Grafana use esta ruta para cargar dashboards y datasources
 
 volumes:
   redis_data:
