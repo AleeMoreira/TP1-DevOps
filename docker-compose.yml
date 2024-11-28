@@ -52,13 +52,17 @@ services:
       - prometheus
     volumes:
       - grafana_data:/var/lib/grafana  # Persiste datos de Grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning  # Configuración de provisión
+      - ./grafana/provisioning:/etc/grafana/provisioning/dashboards  # Configuración de provisión
       - ./grafana/dashboards:/var/lib/grafana/dashboards  # Dashboards JSON
     environment:
-      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning  # Asegura que Grafana use esta ruta para cargar dashboards y datasources
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning/dashboards  # Asegura que Grafana use esta ruta para cargar dashboards y datasources
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+
 
 volumes:
   redis_data:
     driver: local
   grafana_data:
     driver: local
+
