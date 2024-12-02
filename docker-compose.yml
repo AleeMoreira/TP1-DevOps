@@ -20,49 +20,6 @@ services:
     volumes:
       - redis_data:/data
 
-  prometheus:
-    image: prom/prometheus
-    container_name: "prometheus"
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml  # Asegúrate de que prometheus.yml esté en la raíz del proyecto
-    ports:
-      - "9090:9090"
-    depends_on:
-      - cadvisor
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"  # Configura el archivo de configuración explícitamente
-
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest
-    container_name: "cadvisor"
-    ports:
-      - "8080:8080"
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: "grafana"
-    ports:
-      - "3001:3000"  # Grafana usa el puerto 3000 internamente, mapeado a 3001 en el host
-    depends_on:
-      - prometheus
-    volumes:
-      - grafana_data:/var/lib/grafana  # Persiste datos de Grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning  # Configuración de provisión
-      - ./grafana/dashboards:/var/lib/grafana/dashboards  # Dashboards JSON
-    environment:
-      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning  # Asegura que Grafana use esta ruta para cargar dashboards y datasources
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin123
-
-
 volumes:
   redis_data:
     driver: local
-  grafana_data:
-    driver: local
-
