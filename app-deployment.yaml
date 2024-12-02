@@ -30,7 +30,7 @@ spec:
           value: redis
         - name: REDIS_PORT
           value: "6379"
-        image: app
+        image: lucaspereson/app-1:latest
         imagePullPolicy: ""
         name: app
         ports:
