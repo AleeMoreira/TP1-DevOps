@@ -10,8 +10,8 @@ COPY package*.json ./
 # Instalamos las dependencias de la aplicación
 RUN npm install
 
-# Copiamos el resto del código de la aplicación
-COPY src /usr/src/app
+# Copiamos todo el código de la aplicación
+COPY . .
 
 # Exponemos el puerto en el que corre tu aplicación (ajusta según sea necesario)
 EXPOSE 3000

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: inspect-volumes
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    command: ["/bin/sh", "-c", "sleep 3600"]
+    volumeMounts:
+    - mountPath: "/mnt"
+      name: app-claim0
+  volumes:
+  - name: app-claim0
+    persistentVolumeClaim:
+      claimName: app-claim0

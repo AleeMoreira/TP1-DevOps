@@ -30,19 +30,11 @@ spec:
           value: redis
         - name: REDIS_PORT
           value: "6379"
-        image: lucaspereson/app-1:latest
-        imagePullPolicy: ""
+        image: agustinara/node-hello-app:latest
+        imagePullPolicy: Always  # Cambia a "IfNotPresent" para producción si ya existe la imagen
         name: app
         ports:
         - containerPort: 3000
         resources: {}
-        volumeMounts:
-        - mountPath: /usr/src/app/src
-          name: app-claim0
       restartPolicy: Always
-      serviceAccountName: ""
-      volumes:
-      - name: app-claim0
-        persistentVolumeClaim:
-          claimName: app-claim0
 status: {}

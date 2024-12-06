@@ -26,7 +26,7 @@ spec:
     spec:
       containers:
       - image: redis:alpine
-        imagePullPolicy: ""
+        imagePullPolicy: IfNotPresent  # Cambiar a "Always" si quieres forzar la descarga en cada despliegue
         name: redis-server
         ports:
         - containerPort: 6379
@@ -41,3 +41,4 @@ spec:
         persistentVolumeClaim:
           claimName: redis-data
 status: {}
+
